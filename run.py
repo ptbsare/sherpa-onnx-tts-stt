@@ -8,7 +8,6 @@ from functools import partial
 import numpy as np
 import math
 
-# Third-party library imports
 from wyoming.asr import Transcribe, Transcript
 from wyoming.audio import AudioChunk, AudioChunkConverter, AudioStart, AudioStop
 from wyoming.event import Event
@@ -54,9 +53,27 @@ class SherpaOnnxEventHandler(AsyncEventHandler):
 
         if Synthesize.is_type(event.type):
             synthesize = Synthesize.from_event(event)
+            # Determine speaker ID
+            speaker_id = self.cli_args.tts_speaker_sid # Default speaker ID from config/args
+            voice_name_from_event = None
+            if synthesize.voice and synthesize.voice.name:
+                voice_name_from_event = synthesize.voice.name
+                try:
+                    speaker_id_from_event = int(voice_name_from_event)
+                    speaker_id = speaker_id_from_event
+                    speaker_id = speaker_id_from_event
+                    _LOGGER.debug(f"Using speaker ID from event voice name '{voice_name_from_event}': {speaker_id}")
+                except (ValueError, TypeError):
+                    _LOGGER.warning(
+                        f"Invalid speaker ID received in event voice name: '{voice_name_from_event}'. Falling back to default: {speaker_id}"
+                    )
+            else:
+                _LOGGER.debug(f"No specific voice name provided in event. Using default speaker ID: {speaker_id}")
+
+
             audio = self.tts_model.generate(
                 text=synthesize.text,
-                sid=self.cli_args.tts_speaker_sid,
+                sid=speaker_id,
                 speed=self.cli_args.speed,
             )
             _LOGGER.debug(f"Synthesizing: {synthesize.text}")
@@ -156,7 +173,7 @@ async def main() -> None:
     parser.add_argument("--custom_tts_model_eval", type=str, default=os.environ.get('CUSTOM_TTS_MODEL_EVAL', 'null'), help="Custom TTS model eval")
     parser.add_argument("--host", default="0.0.0.0", help="Host for Wyoming and API")
     parser.add_argument("--port", type=int, default=10400, help="Port for Wyoming")
-    parser.add_argument("--api_port", type=int, default=10500, help="Port for FastAPI")  # Add API port
+    parser.add_argument("--api_port", type=int, default=10500, help="Port for FastAPI")
     parser.add_argument("--provider", type=str, default='cpu', help="Execution provider (cpu, cuda)")
 
     cli_args = parser.parse_args()
@@ -177,17 +194,39 @@ async def main() -> None:
     _LOGGER.info("Starting sherpa-onnx add-on...")
 
     # Wyoming Info
+    tts_voices = []
+    voice_attribution = Attribution(name="k2-fsa", url="https://github.com/k2-fsa/sherpa-onnx")
+    voice_installed = True
+    voice_version = "0.0.1"
+
+    # Assuming speakers 0 to 100 based on user feedback.
+    num_speakers = 101
+
+    for i in range(num_speakers): # Loop from 0 to 100
+        speaker_id_str = str(i)
+        speaker_desc = f"Speaker{i}"
+        tts_voices.append(
+            TtsVoice(
+                name=speaker_id_str,
+                description=speaker_desc,
+                languages=[cli_args.language],
+                attribution=voice_attribution,
+                installed=voice_installed,
+                version=voice_version,
+            )
+        )
+
     wyoming_info = Info(
         asr=[
             AsrProgram(
-                name="Sherpa Onnx Offline STT",
+                name="Sherpa Onnx Offline STT", # Consider making this dynamic if possible
                 description="Sherpa Onnx Offline STT.",
                 attribution=Attribution(name="k2-fsa", url="https://github.com/k2-fsa/sherpa-onnx"),
                 installed=True,
                 version="0.0.1",
                 models=[
                     AsrModel(
-                        name=cli_args.stt_model,
+                        name=cli_args.stt_model if cli_args.stt_model else "default",
                         description="ASR Model.",
                         languages=[cli_args.language],
                         attribution=Attribution(name="k2-fsa", url="https://github.com/k2-fsa/sherpa-onnx"),
@@ -199,28 +238,19 @@ async def main() -> None:
         ],
         tts=[
             TtsProgram(
-                name="Sherpa Onnx Offline TTS",
+                name="Sherpa Onnx Offline TTS", # Consider making this dynamic if possible
                 description="Sherpa Onnx Offline TTS.",
                 attribution=Attribution(name="k2-fsa", url="https://github.com/k2-fsa/sherpa-onnx"),
                 installed=True,
                 version="0.0.1",
-                voices=[
-                    TtsVoice(
-                        name=cli_args.tts_model,
-                        description="TTS Model.",
-                        languages=[cli_args.language],
-                        attribution=Attribution(name="k2-fsa", url="https://github.com/k2-fsa/sherpa-onnx"),
-                        installed=True,
-                        version="0.0.1",
-                    )
-                ],
+                voices=tts_voices,
             )
         ],
     )
     stt_model, tts_model = initialize_models(cli_args)
+
     # Run Wyoming server in a separate task
     wyoming_server = AsyncTcpServer(cli_args.host, cli_args.port)
-    _LOGGER.info(f"Starting Wyoming server at {cli_args.host}:{cli_args.port}")
     wyoming_task = asyncio.create_task(
         wyoming_server.run(
             partial(
@@ -235,19 +265,19 @@ async def main() -> None:
     )
 
     # Run FastAPI server using uvicorn
+    _LOGGER.info(f"Starting Wyoming server at {cli_args.host}:{cli_args.port}")
     _LOGGER.info(f"Starting FastAPI server at 0.0.0.0:{cli_args.api_port}")
 
     api._model_container = ModelContainer(stt_model=stt_model, tts_model=tts_model)
 
     config = uvicorn.Config(
-        "api:app",  # Point to the FastAPI app in api.py
+        "api:app",
         host="0.0.0.0",
         port=cli_args.api_port,
         log_level="debug" if cli_args.debug else "info",
     )
     server = uvicorn.Server(config)
 
-    # Wait for both servers to finish
     await asyncio.gather(wyoming_task, server.serve())
     _LOGGER.info("Stopped")
 
