@@ -131,8 +131,8 @@ jobs:
           push: true
           context: ./${{ matrix.addon }}
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.arch }}-addon-${{ matrix.addon }}:${{ steps.information.outputs.version }}
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.arch }}-addon-${{ matrix.addon }}:latest
+            ghcr.io/${{ github.repository_owner }}/home-assistant-addons/${{ matrix.arch }}-addon-${{ matrix.addon }}:${{ steps.information.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/home-assistant-addons/${{ matrix.arch }}-addon-${{ matrix.addon }}:latest
           platforms: ${{ steps.flags.outputs.platform }}
           build-args: |
             BUILD_ARCH=${{ matrix.arch }}
