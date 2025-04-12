@@ -1,4 +1,8 @@
 # v0.3.2
+## Feat
+
+- feat(wyoming): support dynamic TTS voice sid at runtime
+
 ## Fix
 
 - fix: update build workflow
@@ -7,5 +11,3 @@
 ## Chore
 
 - chore: Finalize release workflow changes
-
-
