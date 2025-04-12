@@ -18,7 +18,7 @@ jobs:
       - name: 获取当前版本号
         id: get_current_version
         run: |
-          VERSION=$(yq '.version' sherpa-onnx-tts-stt/config.yaml)
+          VERSION=$(yq '.version' config.yaml)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
       - name: 获取上一个 Release 版本号
         id: get_last_release_version
@@ -47,7 +47,7 @@ jobs:
       - name: 读取版本号 (再次读取，确保最新)
         id: get_version
         run: |
-          VERSION=$(yq '.version' sherpa-onnx-tts-stt/config.yaml)
+          VERSION=$(yq '.version' config.yaml)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
       - name: 生成 Changelog
         id: changelog_gen
@@ -58,8 +58,8 @@ jobs:
           outputformat: markdown
       - name: 更新 CHANGELOG.md
         run: |
-          cat temp_changelog.md sherpa-onnx-tts-stt/CHANGELOG.md > updated_changelog.md
-          mv updated_changelog.md sherpa-onnx-tts-stt/CHANGELOG.md
+          cat temp_changelog.md CHANGELOG.md > updated_changelog.md
+          mv updated_changelog.md CHANGELOG.md
           rm temp_changelog.md
       - name: 创建 Release
         uses: actions/create-release@v1
