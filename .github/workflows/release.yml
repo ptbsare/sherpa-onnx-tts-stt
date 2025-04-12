@@ -48,7 +48,7 @@ jobs:
     if: ${{ needs.release.outputs.should_release == 'true' }}
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Needed to allow BobAnkh/auto-generate-changelog to commit CHANGELOG.md
+      contents: write
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -62,8 +62,75 @@ jobs:
       - name: Generate Release note body.
         id: github_release
         uses: mikepenz/release-changelog-builder-action@v5
+        with:
+          mode: "HYBRID"
+          configurationJson: |
+            {
+              "template": "#{{CHANGELOG}}",
+              "categories": [
+                {
+                    "title": "## Feature",
+                    "labels": ["feat", "feature"]
+                },
+                {
+                    "title": "## Fix",
+                    "labels": ["fix", "bug"]
+                },
+                {
+                    "title": "## Performance",
+                    "labels": ["perf"]
+                },
+                {
+                    "title": "## Documentation",
+                    "labels": ["docs"]
+                },
+                {
+                    "title": "## Chore",
+                    "labels": ["chore"]
+                },
+                {
+                    "title": "## Refactor",
+                    "labels": ["refactor"]
+                },
+                {
+                    "title": "## Revert",
+                    "labels": ["revert"]
+                },
+                {
+                    "title": "## Style",
+                    "labels": ["style"]
+                },
+                {
+                    "title": "## Test",
+                    "labels": ["test"]
+                },
+                {
+                    "title": "## Other",
+                    "labels": []
+                }
+              ],
+              "label_extractor": [
+                {
+                  "pattern": "^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)",
+                  "on_property": "title",
+                  "target": "$1"
+                }
+              ]
+            }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Write release note to CHANGELOG.md
+        run: |
+          echo "${{steps.github_release.outputs.changelog}}" > CHANGELOG.md
+      - name: Commit CHANGELOG.md
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add CHANGELOG.md
+          git commit -m "docs(CHANGELOG): update release notes"
+      - name: Push changes
+        run: |
+          git push origin main
       - name: Create Release
         uses: actions/create-release@v1
         env:
@@ -71,12 +138,4 @@ jobs:
         with:
           tag_name: v${{ steps.get_version.outputs.VERSION }}
           release_name: Release v${{ steps.get_version.outputs.VERSION }}
-          body: ${{steps.github_release.outputs.changelog}}
-      - name: Generate CHANGELOG.md
-        uses: BobAnkh/auto-generate-changelog@v1.2.5
-        with:
-          REPO_NAME: ${{ github.repository }}
-          ACCESS_TOKEN: ${{secrets.GITHUB_TOKEN}}
-          PATH: 'CHANGELOG.md'
-          COMMIT_MESSAGE: 'docs(CHANGELOG): update release notes'
-          TYPE: 'feat:Feature,fix:Bug Fixes,docs:Documentation,refactor:Refactor,perf:Performance Improvements'
+          body: ${{ steps.github_release.outputs.changelog }}
