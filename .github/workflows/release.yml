@@ -66,7 +66,6 @@ jobs:
           mode: "HYBRID"
           configurationJson: |
             {
-              "template": "#{{CHANGELOG}}",
               "categories": [
                 {
                     "title": "## Feature",
@@ -121,7 +120,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Write release note to CHANGELOG.md
         run: |
-          echo "${{steps.github_release.outputs.changelog}}" > CHANGELOG.md
+          echo "# v${{ steps.get_version.outputs.VERSION }}" > CHANGELOG.md
+          echo "${{steps.github_release.outputs.changelog}}" >> CHANGELOG.md
       - name: Commit CHANGELOG.md
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
