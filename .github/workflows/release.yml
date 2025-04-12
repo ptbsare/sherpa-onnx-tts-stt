@@ -20,12 +20,17 @@ jobs:
         run: |
           VERSION=$(yq '.version' config.yaml)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-      - name: Get last Release VERSION
+      - name: Get latest release from GitHub API
         id: get_last_release_version
         run: |
-          LAST_VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
-          LAST_VERSION=$(echo "$LAST_VERSION" | sed 's/^v//')
-          echo "LAST_VERSION=$LAST_VERSION" >> $GITHUB_OUTPUT
+          response=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+          if echo "$response" | jq -e '.tag_name'; then
+            LAST_VERSION=$(echo "$response" | jq -r '.tag_name' | sed 's/^v//')
+            echo "LAST_VERSION=$LAST_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "No previous releases found or API error, defaulting to version 0.0.0"
+            echo "LAST_VERSION=0.0.0" >> $GITHUB_OUTPUT
+          fi
       - name: Check need to release or not
         id: check_version_change
         run: |
