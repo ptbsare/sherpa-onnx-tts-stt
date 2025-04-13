@@ -6,7 +6,7 @@ description: >-
   离线Sherpa-onnx TTS/STT的wyoming集成，支持kokoro-TTS/matcha-TTS/paraformer-STT，需要1.5G内存。
   Also supports Openai-format TTS/STT api  IP:10500/v1/audio/speech IP:10500/v1/audio/transcriptions
   同时支持Openai TTS/STT 格式两个接口  IP:10500/v1/audio/speech IP:10500/v1/audio/transcriptions
-url: https://github.com/ptbsare/home-assistant-addons/tree/main/sherpa-onnx-tts-stt
+url: https://github.com/ptbsare/sherpa-onnx-tts-stt
 arch:
   - amd64
   - aarch64
