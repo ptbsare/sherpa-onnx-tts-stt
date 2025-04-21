@@ -61,7 +61,6 @@ class SherpaOnnxEventHandler(AsyncEventHandler):
                 try:
                     speaker_id_from_event = int(voice_name_from_event)
                     speaker_id = speaker_id_from_event
-                    speaker_id = speaker_id_from_event
                     _LOGGER.debug(f"Using speaker ID from event voice name '{voice_name_from_event}': {speaker_id}")
                 except (ValueError, TypeError):
                     _LOGGER.warning(
@@ -204,7 +203,7 @@ async def main() -> None:
 
     for i in range(num_speakers): # Loop from 0 to 100
         speaker_id_str = str(i)
-        speaker_desc = f"Speaker{i}"
+        speaker_desc = f"speaker{i}"
         tts_voices.append(
             TtsVoice(
                 name=speaker_id_str,

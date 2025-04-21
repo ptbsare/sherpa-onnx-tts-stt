@@ -5,6 +5,7 @@ import numpy as np
 import io
 from typing import Optional, Any
 import logging
+import re
 from pydub import AudioSegment  # Import pydub
 #from run import model_container # Removed circular import
 from model_container import ModelContainer
@@ -82,9 +83,19 @@ async def generate_speech(request: Request, tts_request: TTSRequest, models: Mod
 
     try:
         # Use provided values or defaults
-        speaker_id = 0
-        if tts_request.voice is not None and tts_request.voice == "aishell3":
-            speaker_id = 0
+        speaker_id = 0  # Default speaker ID
+        if tts_request.voice is not None:
+            match = re.match(r"speaker(\d+)", tts_request.voice)
+            if match:
+                try:
+                    speaker_id = int(match.group(1))
+                    _LOGGER.debug(f"Parsed speaker ID {speaker_id} from voice '{tts_request.voice}'")
+                except (ValueError, IndexError):
+                    _LOGGER.warning(f"Could not parse speaker ID from voice '{tts_request.voice}', using default {speaker_id}")
+            # elif tts_request.voice == "aishell3":
+            #     speaker_id = 0  
+            else:
+                 _LOGGER.debug(f"Voice '{tts_request.voice}' did not match expected pattern 'speaker<N>-<M>', using default speaker ID {speaker_id}")
 
         speed = tts_request.speed if tts_request.speed is not None else 1.0
         _LOGGER.debug(f"TTS Request: text={tts_request.text}, speaker_id={speaker_id}, speed={speed}")
