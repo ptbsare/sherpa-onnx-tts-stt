@@ -113,38 +113,41 @@ async def generate_speech(request: Request, tts_request: TTSRequest, models: Mod
             )
         audio_samples = (audio_samples * 32767).astype(np.int16)
         audio_bytes = audio_samples.tobytes()
+        original_sample_rate = int(audio.sample_rate)
 
-        # Construct WAV header
-        sample_rate = int(audio.sample_rate)  # Ensure it's an integer
-        num_channels = 1
-        bits_per_sample = 16
-        subchunk2_size = len(audio_bytes)
-        chunk_size = 36 + subchunk2_size
-        byte_rate = sample_rate * num_channels * bits_per_sample // 8
-        block_align = num_channels * bits_per_sample // 8
+        # Use pydub to handle resampling and WAV export
+        try:
+            # Create AudioSegment from raw bytes
+            original_audio = AudioSegment(
+                data=audio_bytes,
+                sample_width=2,  # 16-bit
+                frame_rate=original_sample_rate,
+                channels=1       # Mono
+            )
 
-        header = b'RIFF'
-        header += chunk_size.to_bytes(4, 'little')
-        header += b'WAVE'
-        header += b'fmt '
-        header += (16).to_bytes(4, 'little')  # Subchunk1Size (PCM)
-        header += (1).to_bytes(2, 'little')  # AudioFormat (PCM)
-        header += num_channels.to_bytes(2, 'little')
-        header += sample_rate.to_bytes(4, 'little')
-        header += byte_rate.to_bytes(4, 'little')
-        header += block_align.to_bytes(2, 'little')
-        header += bits_per_sample.to_bytes(2, 'little')
-        header += b'data'
-        header += subchunk2_size.to_bytes(4, 'little')
+            # Resample to 44100 Hz if necessary
+            if original_sample_rate != 44100:
+                _LOGGER.debug(f"Resampling audio from {original_sample_rate} Hz to 44100 Hz")
+                resampled_audio = original_audio.set_frame_rate(44100)
+            else:
+                _LOGGER.debug("Audio already at 44100 Hz, no resampling needed.")
+                resampled_audio = original_audio # Use original if already correct rate
 
-        # Combine header and audio data
-        wav_data = header + audio_bytes
+            # Export to an in-memory WAV file
+            wav_buffer = io.BytesIO()
+            resampled_audio.export(wav_buffer, format="wav")
+            wav_buffer.seek(0) # Rewind buffer to the beginning for reading
+            wav_data = wav_buffer.read()
 
-        headers = {
-            "Content-Type": "audio/wav",
-            "Content-Security-Policy": "media-src * data: blob:;"
-        }
-        return StreamingResponse(io.BytesIO(wav_data), media_type="audio/wav", headers=headers)
+            headers = {
+                "Content-Type": "audio/wav",
+                "Content-Security-Policy": "media-src * data: blob:;" # Added CSP header for broader compatibility
+            }
+            return StreamingResponse(io.BytesIO(wav_data), media_type="audio/wav", headers=headers)
+
+        except Exception as pydub_error:
+            _LOGGER.exception(f"Error during pydub processing: {pydub_error}")
+            raise HTTPException(status_code=500, detail=f"Error processing audio with pydub: {pydub_error}")
 
     except Exception as e:
         _LOGGER.exception(f"Error during TTS: {e}")
