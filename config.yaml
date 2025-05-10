@@ -33,6 +33,7 @@ schema:
     stt_model: |
       list(sherpa-onnx-paraformer-zh-2023-03-28|sherpa-onnx-paraformer-zh-small-2024-03-09|custom_stt_model)
     stt_use_int8_onnx_model: bool
+    stt_builtin_auto_convert_number: bool
     stt_thread_num: int
     tts_model: |
       list(matcha-icefall-zh-baker|vits-melo-tts-zh_en|kokoro-int8-multi-lang-v1_1|custom_tts_model)
