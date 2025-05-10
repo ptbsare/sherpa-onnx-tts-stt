@@ -32,7 +32,7 @@ RUN if [ "$BUILD_TYPE" = "cuda" ]; then
     ENV YARN_HTTP_TIMEOUT=1000000
     ENV TERM="xterm-256color"
     # Set shell (for GPU base image)
-    SHELL ["/bin/bash", "-o", "pipefail", "-c"];
+    SHELL ["/bin/bash", "-o", "pipefail", "-c"]
     # Install base system (for GPU base image)
     ENV BUILD_ARCH=amd64
     ENV BASHIO_VERSION="v0.16.2"
