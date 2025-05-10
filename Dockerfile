@@ -16,28 +16,28 @@ FROM ${CPU_PLATFORM}
 RUN if [ "$BUILD_TYPE" = "cuda" ]; then
     USER root;
     # Environment variables (for GPU base image)
-    export CARGO_NET_GIT_FETCH_WITH_CLI=true;
-    export DEBIAN_FRONTEND="noninteractive";
-    export HOME="/root";
-    export LANG="C.UTF-8";
-    export PIP_DISABLE_PIP_VERSION_CHECK=1;
-    export PIP_NO_CACHE_DIR=1;
-    export PIP_PREFER_BINARY=1;
-    export PS1='$(whoami)@$(hostname):$(pwd)$ ';
-    export PYTHONDONTWRITEBYTECODE=1;
-    export PYTHONUNBUFFERED=1;
-    export S6_BEHAVIOUR_IF_STAGE2_FAILS=2;
-    export S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0;
-    export S6_CMD_WAIT_FOR_SERVICES=1;
-    export YARN_HTTP_TIMEOUT=1000000;
-    export TERM="xterm-256color";
+    ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
+    ENV DEBIAN_FRONTEND="noninteractive"
+    ENV HOME="/root"
+    ENV LANG="C.UTF-8"
+    ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+    ENV PIP_NO_CACHE_DIR=1
+    ENV PIP_PREFER_BINARY=1
+    ENV PS1='$(whoami)@$(hostname):$(pwd)$ '
+    ENV PYTHONDONTWRITEBYTECODE=1
+    ENV PYTHONUNBUFFERED=1
+    ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2
+    ENV S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0
+    ENV S6_CMD_WAIT_FOR_SERVICES=1
+    ENV YARN_HTTP_TIMEOUT=1000000
+    ENV TERM="xterm-256color"
     # Set shell (for GPU base image)
     SHELL ["/bin/bash", "-o", "pipefail", "-c"];
     # Install base system (for GPU base image)
-    export BUILD_ARCH=amd64;
-    export BASHIO_VERSION="v0.16.2";
-    export S6_OVERLAY_VERSION="3.2.0.2";
-    export TEMPIO_VERSION="2024.11.2";
+    ENV BUILD_ARCH=amd64
+    ENV BASHIO_VERSION="v0.16.2"
+    ENV S6_OVERLAY_VERSION="3.2.0.2"
+    ENV TEMPIO_VERSION="2024.11.2"
     apt-get update &&
     apt-get install -y --no-install-recommends ca-certificates curl jq tzdata xz-utils &&
     S6_ARCH="${BUILD_ARCH}" &&
