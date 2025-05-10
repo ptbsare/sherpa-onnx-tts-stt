@@ -69,8 +69,7 @@ def initialize_models(cli_args):
                     sample_rate=16000,
                     feature_dim=80,
                     debug=cli_args.debug,
-                    rule_fsts=os.path.join('/app/',
-                                            "itn_zh_number.fst" if cli_args.stt_builtin_auto_convert_number == True else ""),
+                    rule_fsts=(os.path.join('/app/', "itn_zh_number.fst") if cli_args.stt_builtin_auto_convert_number else ''),
                 )
             except Exception as e:  # More specific exception handling is better
                 _LOGGER.exception("Failed to initialize STT model:")
@@ -87,8 +86,7 @@ def initialize_models(cli_args):
                 sample_rate=16000,
                 feature_dim=80,
                 debug=cli_args.debug,
-                rule_fsts=os.path.join('/app/',
-                                        "itn_zh_number.fst" if cli_args.stt_builtin_auto_convert_number == True else ""),
+                rule_fsts=(os.path.join('/app/', "itn_zh_number.fst") if cli_args.stt_builtin_auto_convert_number else ""),
             )
             except Exception as e:  # More specific exception handling is better
                 _LOGGER.exception("Failed to initialize STT model:")
