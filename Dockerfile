@@ -97,9 +97,9 @@ RUN apt-get update \
 # Install CUDA related packages and change sherpa-onnx installation for GPU if BUILD_TYPE is cuda
 RUN if [ "$BUILD_TYPE" = "cuda" ]; then \
     apt-get update && apt-get install -y --no-install-recommends libasound2 && rm -rf /var/lib/apt/lists/*; \
-    pip install --no-cache-dir numpy; \
-    pip install sherpa-onnx==1.10.43+cuda -f https://k2-fsa.github.io/sherpa/onnx/cuda.html; \
-elif [ "$BUILD_TYPE" = "cpu" ]; then \
+    pip install --no-cache-dir numpy && pip install sherpa-onnx==1.10.43+cuda -f https://k2-fsa.github.io/sherpa/onnx/cuda.html; \
+else \
+    echo "BUILD_TYPE is not cuda, installing cpu version sherpa-onnx"; \
     pip install --break-system-packages --no-cache-dir sherpa-onnx numpy; \
 fi
 
