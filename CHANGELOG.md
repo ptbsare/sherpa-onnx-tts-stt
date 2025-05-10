@@ -1,13 +1,25 @@
-# v0.3.2
-## Feat
+# v0.3.3
+## Feature
 
 - feat(wyoming): support dynamic TTS voice sid at runtime
+- feat(release): use latest GitHub release for version check and CHANGELOG.md for release body
 
 ## Fix
 
-- fix: update build workflow
-- fix: update DOCS.md link
+- fix: fix release workflow
+
+## Documentation
+
+- docs(CHANGELOG): update release notes
 
 ## Chore
 
-- chore: Finalize release workflow changes
+- chore: Improve release automation
+- chore: bump version 0.3.2
+- chore: bump version 0.3.2
+
+## Other
+
+- Update CHANGELOG.md
+
+
