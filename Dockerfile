@@ -15,6 +15,9 @@ FROM ${CPU_PLATFORM}
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
+ARG S6_OVERLAY_VERSION_DEFAULT="3.2.0.2"
+ENV S6_OVERLAY_VERSION=${S6_OVERLAY_VERSION_DEFAULT}
+
 # Conditional sections for GPU base image
 RUN if [ "$BUILD_TYPE" = "cuda" ]; then \
     export CARGO_NET_GIT_FETCH_WITH_CLI=true; \
@@ -91,25 +94,36 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Install CUDA related packages and change sherpa-onnx installation for GPU if BUILD_TYPE is cuda
-RUN if [ "$BUILD_TYPE" = "cuda" ]; then
-    apt-get update && apt-get install -y --no-install-recommends libasound2 && rm -rf /var/lib/apt/lists/*;
-    pip install --no-cache-dir numpy;
-    pip install sherpa-onnx==1.10.43+cuda -f https://k2-fsa.github.io/sherpa/onnx/cuda.html;
-elif [ "$BUILD_TYPE" = "cpu" ]; then
-    pip install --break-system-packages --no-cache-dir sherpa-onnx numpy;
+RUN if [ "$BUILD_TYPE" = "cuda" ]; then \
+    apt-get update && apt-get install -y --no-install-recommends libasound2 && rm -rf /var/lib/apt/lists/*; \
+    pip install --no-cache-dir numpy; \
+    pip install sherpa-onnx==1.10.43+cuda -f https://k2-fsa.github.io/sherpa/onnx/cuda.html; \
+elif [ "$BUILD_TYPE" = "cpu" ]; then \
+    pip install --break-system-packages --no-cache-dir sherpa-onnx numpy; \
 fi
 
 # Copy root filesystem conditionally
-RUN if [ "$BUILD_TYPE" = "cuda" ]; then
-    COPY rootfs /;
-else
-    COPY rootfs/etc /etc;
-fi
+COPY rootfs /tmp/staging_rootfs_conditional
+RUN if [ "$BUILD_TYPE" = "cuda" ]; then \
+    echo "BUILD_TYPE is cuda, copying full rootfs"; \
+    cp -a /tmp/staging_rootfs_conditional/. / ; \
+else \
+    echo "BUILD_TYPE is not cuda, copying rootfs/etc"; \
+    mkdir -p /etc && cp -a /tmp/staging_rootfs_conditional/etc/. /etc/ ; \
+fi \
+&& rm -rf /tmp/staging_rootfs_conditional
 
 # Copy s6-overlay adjustments for GPU
-RUN if [ "$BUILD_TYPE" = "cuda" ]; then
-    COPY s6-overlay /package/admin/s6-overlay-${S6_OVERLAY_VERSION}/;
-fi
+COPY s6-overlay /tmp/staging_s6_overlay_conditional
+RUN if [ "$BUILD_TYPE" = "cuda" ]; then \
+    echo "BUILD_TYPE is cuda, copying s6-overlay"; \
+    TARGET_S6_PATH="/package/admin/s6-overlay-${S6_OVERLAY_VERSION}/"; \
+    mkdir -p "${TARGET_S6_PATH}" && \
+    cp -a /tmp/staging_s6_overlay_conditional/. "${TARGET_S6_PATH}" ; \
+else \
+    echo "BUILD_TYPE is not cuda, skipping s6-overlay copy"; \
+fi \
+&& rm -rf /tmp/staging_s6_overlay_conditional
 
 # Create model directories
 RUN mkdir -p /stt-models && mkdir -p /tts-models && mkdir -p /tts-models/espeak-ng-data
