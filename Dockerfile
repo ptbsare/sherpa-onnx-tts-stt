@@ -12,54 +12,52 @@ ARG GPU_PLATFORM=nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
 
 #FROM --platform=$TARGET_PLATFORM ${TARGET_PLATFORM}
 FROM ${CPU_PLATFORM}
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 # Conditional sections for GPU base image
-RUN if [ "$BUILD_TYPE" = "cuda" ]; then
-    USER root;
-    # Environment variables (for GPU base image)
-    ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
-    ENV DEBIAN_FRONTEND="noninteractive"
-    ENV HOME="/root"
-    ENV LANG="C.UTF-8"
-    ENV PIP_DISABLE_PIP_VERSION_CHECK=1
-    ENV PIP_NO_CACHE_DIR=1
-    ENV PIP_PREFER_BINARY=1
-    ENV PS1='$(whoami)@$(hostname):$(pwd)$ '
-    ENV PYTHONDONTWRITEBYTECODE=1
-    ENV PYTHONUNBUFFERED=1
-    ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2
-    ENV S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0
-    ENV S6_CMD_WAIT_FOR_SERVICES=1
-    ENV YARN_HTTP_TIMEOUT=1000000
-    ENV TERM="xterm-256color"
-    # Set shell (for GPU base image)
-    SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-    # Install base system (for GPU base image)
-    ENV BUILD_ARCH=amd64
-    ENV BASHIO_VERSION="v0.16.2"
-    ENV S6_OVERLAY_VERSION="3.2.0.2"
-    ENV TEMPIO_VERSION="2024.11.2"
-    apt-get update &&
-    apt-get install -y --no-install-recommends ca-certificates curl jq tzdata xz-utils &&
-    S6_ARCH="${BUILD_ARCH}" &&
-    if [ "${BUILD_ARCH}" = "i386" ]; then S6_ARCH="i686";
-    elif [ "${BUILD_ARCH}" = "amd64" ]; then S6_ARCH="x86_64";
-    elif [ "${BUILD_ARCH}" = "armv7" ]; then S6_ARCH="arm"; fi &&
-    curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz" | tar -C / -Jxpf - &&
-    curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${S6_ARCH}.tar.xz" | tar -C / -Jxpf - &&
-    curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-symlinks-noarch.tar.xz" | tar -C / -Jxpf - &&
-    curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-symlinks-arch.tar.xz" | tar -C / -Jxpf - &&
-    mkdir -p /etc/fix-attrs.d &&
-    mkdir -p /etc/services.d &&
-    curl -J -L -o /tmp/bashio.tar.gz "https://github.com/hassio-addons/bashio/archive/${BASHIO_VERSION}.tar.gz" &&
-    mkdir /tmp/bashio &&
-    tar zxvf /tmp/bashio.tar.gz --strip 1 -C /tmp/bashio &&
-    mv /tmp/bashio/lib /usr/lib/bashio &&
-    ln -s /usr/lib/bashio/bashio /usr/bin/bashio &&
-    curl -L -s -o /usr/bin/tempio "https://github.com/home-assistant/tempio/releases/download/${TEMPIO_VERSION}/tempio_${BUILD_ARCH}" &&
-    chmod a+x /usr/bin/tempio &&
-    apt-get purge -y --auto-remove xz-utils &&
-    apt-get clean &&
-    rm -fr /tmp/* /var/{cache,log}/* /var/lib/apt/lists/*;
+RUN if [ "$BUILD_TYPE" = "cuda" ]; then \
+    export CARGO_NET_GIT_FETCH_WITH_CLI=true; \
+    export DEBIAN_FRONTEND="noninteractive"; \
+    export HOME="/root"; \
+    export LANG="C.UTF-8"; \
+    export PIP_DISABLE_PIP_VERSION_CHECK=1; \
+    export PIP_NO_CACHE_DIR=1; \
+    export PIP_PREFER_BINARY=1; \
+    export PS1='$(whoami)@$(hostname):$(pwd)$ '; \
+    export PYTHONDONTWRITEBYTECODE=1; \
+    export PYTHONUNBUFFERED=1; \
+    export S6_BEHAVIOUR_IF_STAGE2_FAILS=2; \
+    export S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0; \
+    export S6_CMD_WAIT_FOR_SERVICES=1; \
+    export YARN_HTTP_TIMEOUT=1000000; \
+    export TERM="xterm-256color"; \
+    export BUILD_ARCH=amd64; \
+    export BASHIO_VERSION="v0.16.2"; \
+    export S6_OVERLAY_VERSION="3.2.0.2"; \
+    export TEMPIO_VERSION="2024.11.2"; \
+    apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl jq tzdata xz-utils && \
+    S6_ARCH="${BUILD_ARCH}" && \
+    if [ "${BUILD_ARCH}" = "i386" ]; then S6_ARCH="i686"; \
+    elif [ "${BUILD_ARCH}" = "amd64" ]; then S6_ARCH="x86_64"; \
+    elif [ "${BUILD_ARCH}" = "armv7" ]; then S6_ARCH="arm"; fi && \
+    curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz" | tar -C / -Jxpf - && \
+    curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${S6_ARCH}.tar.xz" | tar -C / -Jxpf - && \
+    curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-symlinks-noarch.tar.xz" | tar -C / -Jxpf - && \
+    curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-symlinks-arch.tar.xz" | tar -C / -Jxpf - && \
+    mkdir -p /etc/fix-attrs.d && \
+    mkdir -p /etc/services.d && \
+    curl -J -L -o /tmp/bashio.tar.gz "https://github.com/hassio-addons/bashio/archive/${BASHIO_VERSION}.tar.gz" && \
+    mkdir /tmp/bashio && \
+    tar zxvf /tmp/bashio.tar.gz --strip 1 -C /tmp/bashio && \
+    mv /tmp/bashio/lib /usr/lib/bashio && \
+    ln -s /usr/lib/bashio/bashio /usr/bin/bashio && \
+    curl -L -s -o /usr/bin/tempio "https://github.com/home-assistant/tempio/releases/download/${TEMPIO_VERSION}/tempio_${BUILD_ARCH}" && \
+    chmod a+x /usr/bin/tempio && \
+    apt-get purge -y --auto-remove xz-utils && \
+    apt-get clean && \
+    rm -fr /tmp/* /var/{cache,log}/* /var/lib/apt/lists/*; \
 fi
 
 # Common environment variables - Defined once
