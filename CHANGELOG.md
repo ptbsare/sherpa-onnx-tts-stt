@@ -1,8 +1,7 @@
 # v0.3.3
 ## Feature
 
-- feat(wyoming): support dynamic TTS voice sid at runtime
-- feat(release): use latest GitHub release for version check and CHANGELOG.md for release body
+- feat: 新增选项设置STT_BUILTIN_AUTO_CONVERT_NUMBER=True以启用内置STT模型汉字数字一二三到阿拉伯数字123的转换更好适应内置Hass Intent Fix #1
 
 ## Fix
 
@@ -12,14 +11,5 @@
 
 - docs(CHANGELOG): update release notes
 
-## Chore
-
-- chore: Improve release automation
-- chore: bump version 0.3.2
-- chore: bump version 0.3.2
-
-## Other
-
-- Update CHANGELOG.md
 
 

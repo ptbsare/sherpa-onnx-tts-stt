@@ -3,15 +3,15 @@ ARG CPU_PLATFORM=python:3.11.9-slim-bullseye
 ARG GPU_PLATFORM=nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
 
 # Set TARGET_PLATFORM based on BUILD_TYPE
-ARG TARGET_PLATFORM
-RUN if [ "$BUILD_TYPE" = "cuda" ]; then
-    export TARGET_PLATFORM=$GPU_PLATFORM;
-else
-    export TARGET_PLATFORM=$CPU_PLATFORM;
-fi
+#ARG TARGET_PLATFORM
+#RUN if [ "$BUILD_TYPE" = "cuda" ]; then
+#    export TARGET_PLATFORM=$GPU_PLATFORM;
+#else
+#    export TARGET_PLATFORM=$CPU_PLATFORM;
+#fi
 
-FROM --platform=$TARGET_PLATFORM ${TARGET_PLATFORM}
-
+#FROM --platform=$TARGET_PLATFORM ${TARGET_PLATFORM}
+FROM ${CPU_PLATFORM}
 # Conditional sections for GPU base image
 RUN if [ "$BUILD_TYPE" = "cuda" ]; then
     USER root;
