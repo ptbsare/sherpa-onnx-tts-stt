@@ -11,7 +11,8 @@ ARG GPU_PLATFORM=nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
 #fi
 
 #FROM --platform=$TARGET_PLATFORM ${TARGET_PLATFORM}
-FROM ${CPU_PLATFORM}
+ARG BUILD_FROM "python:3.11.9-slim-bullseye"
+FROM $BUILD_FROM
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
