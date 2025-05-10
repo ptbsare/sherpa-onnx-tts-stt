@@ -168,3 +168,90 @@ Goto the [Sherpa Onnx repo TTS Python examples](https://github.com/k2-fsa/sherpa
 ## Openai-format TTS/STT api support
 Experimental Support for Openai-format TTS/STT api  IP:10500/v1/audio/speech IP:10500/v1/audio/transcriptions
 添加Openai TTS/STT 实验性支持，实现了两个接口  IP:10500/v1/audio/speech IP:10500/v1/audio/transcriptions
+
+## Examples
+### Docker
+```docker
+DSM Container Manager:
+
+services:
+  certimate:
+    image: ghcr.io/ptbsare/home-assistant-addons/amd64-addon-sherpa-onnx-tts-stt:latest
+    container_name: sherpa-onnx-tts-stt
+    environment:
+      LANGUAGE: "zh-CN"
+      STT_MODEL: "sherpa-onnx-paraformer-zh-2023-03-28"
+      SPEED: "1.2"
+      STT_USE_INT8_ONNX_MODEL: "True"
+      STT_THREAD_NUM: "3"
+      TTS_MODEL: "matcha-icefall-zh-baker"
+      TTS_THREAD_NUM: "3"
+      TTS_SPEAKER_SID: "0"
+      DEBUG: "True"
+    ports:
+      - 10400:10400
+    restart: unless-stopped
+```
+### CUSTOM TTS MODELS(For advanced users only)
+```docker
+services:
+  certimate:
+    image: ghcr.io/ptbsare/home-assistant-addons/amd64-addon-sherpa-onnx-tts-stt:0.2.8
+    container_name: sherpa-onnx-tts-stt
+    environment:
+      LANGUAGE: "zh-CN"
+
+      STT_USE_INT8_ONNX_MODEL: "True"
+      STT_THREAD_NUM: "8"
+
+      CUSTOM_TTS_MODEL: "vits-melo-tts-zh_en"
+      CUSTOM_TTS_MODEL_EVAL: |
+        sherpa_onnx.OfflineTts(
+          sherpa_onnx.OfflineTtsConfig(
+          model=sherpa_onnx.OfflineTtsModelConfig(
+          vits=sherpa_onnx.OfflineTtsVitsModelConfig(
+          model="/tts-models/vits-melo-tts-zh_en/model.onnx",
+          lexicon="/tts-models/vits-melo-tts-zh_en/lexicon.txt",
+          tokens="/tts-models/vits-melo-tts-zh_en/tokens.txt",
+          dict_dir="/tts-models/vits-melo-tts-zh_en/dict",
+          ),
+         provider="cpu",
+         num_threads=8,
+          debug=True,
+          ),
+          rule_fsts="/tts-models/vits-melo-tts-zh_en/phone.fst,/tts-models/vits-melo-tts-zh_en/date.fst,/tts-models/vits-melo-tts-zh_en/number.fst",                 
+          max_num_sentences=1,
+          )
+        )
+      DEBUG: "True"
+    ports:
+      - 10400:10400
+    restart: unless-stopped
+```
+### CUSTOM STT MODELS(For advanced users only)(Cantonese STT)
+```docker
+定义模型例子（粤语stt例子）（Docker/高阶用户）
+language: zh-CN
+speed: 1
+stt_model: custom_stt_model
+stt_use_int8_onnx_model: true
+stt_thread_num: 3
+tts_model: vits-melo-tts-zh_en
+tts_thread_num: 3
+tts_speaker_sid: 0
+debug: true
+custom_stt_model: sherpa-onnx-zipformer-cantonese-2024-03-13
+custom_stt_model_eval: |-
+  sherpa_onnx.OfflineRecognizer.from_transducer(      
+    encoder="/stt-models/sherpa-onnx-zipformer-cantonese-2024-03-13/encoder-epoch-45-avg-35.int8.onnx",      
+    decoder="/stt-models/sherpa-onnx-zipformer-cantonese-2024-03-13/decoder-epoch-45-avg-35.int8.onnx",      
+    joiner="/stt-models/sherpa-onnx-zipformer-cantonese-2024-03-13/joiner-epoch-45-avg-35.int8.onnx",      
+    tokens="/stt-models/sherpa-onnx-zipformer-cantonese-2024-03-13/tokens.txt",
+    num_threads=3,
+    decoding_method="greedy_search",
+    provider="cpu",
+    sample_rate=16000,
+    feature_dim=80,
+    debug=True
+  )
+```
