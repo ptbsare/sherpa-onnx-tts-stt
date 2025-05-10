@@ -33,7 +33,7 @@ TTS Models are automatically downloaded from [TTS Model list on Github](https://
 
 DOCKER ENV LANGUAGE
 
-Default language to use. eg. en
+Default language to use. eg. en default:zh-CN
 
 ### Option: `speed`
 
@@ -50,19 +50,26 @@ Name of the builtin model to use. eg.
 sherpa-onnx-paraformer-zh-2023-03-28
 sherpa-onnx-paraformer-zh-small-2024-03-09
 ```
+default: sherpa-onnx-paraformer-zh-2023-03-28
 See the [models](#models) section for more details.
 
 ### Option: `stt_use_int8_onnx_model`
 
 DOCKER ENV STT_USE_INT8_ONNX_MODEL
 
-Enable int8 model to reduce memery usage. eg. True
+Enable int8 model to reduce memery usage. default: True
+
+### Option: `stt_builtin_auto_convert_number`
+
+DOCKER ENV STT_BUILTIN_AUTO_CONVERT_NUMBER
+
+Enable STT auto convert Chinese numbers(eg. 一二三) to Arabic numerals (eg. 123) for better Hass intent compatibility. default: False
 
 ### Option: `stt_thread_num`
 
 DOCKER ENV STT_THREAD_NUM
 
-Number of Threads for TTS. eg. 3
+Number of Threads for TTS. default: 3
     
 ### Option: `tts_model`
 
@@ -74,23 +81,24 @@ matcha-icefall-zh-baker
 vits-melo-tts-zh_en
 kokoro-int8-multi-lang-v1_1
 ```
+default: matcha-icefall-zh-baker
 ### Option: `tts_thread_num`
 
 DOCKER ENV TTS_THREAD_NUM
 
-Number of Threads for TTS. eg. 3
+Number of Threads for TTS. default. 3
 
 ### Option: `tts_speaker_sid`
 
 DOCKER ENV TTS_SPEAKER_SID
 
-TTS Speaker ID. eg. 0
+TTS Speaker ID. default. 0
 
 ### Option: `debug`
 
 DOCKER ENV DEBUG
 
-Enable debug logging. eg. False
+Enable debug logging. default. False
 
 ### Option: `custom_stt_model`
 

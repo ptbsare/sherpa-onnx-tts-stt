@@ -161,6 +161,7 @@ async def main() -> None:
     parser.add_argument("--speed", type=float, default=float(os.environ.get('SPEED', 1.0)), help="Speech speed")
     parser.add_argument("--stt_model", type=str, default=os.environ.get('STT_MODEL'), help="STT model name")
     parser.add_argument("--stt_use_int8_onnx_model", type=lambda x: (str(x).lower() in ['true','1', 'yes']), default=os.environ.get('STT_USE_INT8_ONNX_MODEL', 'false'), help="Use int8 STT model")
+    parser.add_argument("--stt_builtin_auto_convert_number", type=lambda x: (str(x).lower() in ['true','1', 'yes']), default=os.environ.get('STT_BUILTIN_AUTO_CONVERT_NUMBER', 'false'), help="Enable builtin STT number convert")
     parser.add_argument("--stt_thread_num", type=int, default=int(os.environ.get('STT_THREAD_NUM', 2)), help="STT threads")
     parser.add_argument("--tts_model", type=str, default=os.environ.get('TTS_MODEL'), help="TTS model name")
     parser.add_argument("--tts_thread_num", type=int, default=int(os.environ.get('TTS_THREAD_NUM',2)), help="TTS threads")

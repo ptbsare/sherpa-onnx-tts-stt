@@ -21,6 +21,7 @@ options:
     speed: 1.0
     stt_model: sherpa-onnx-paraformer-zh-2023-03-28
     stt_use_int8_onnx_model: True
+    stt_builtin_auto_convert_number: False
     stt_thread_num: 3
     tts_model: matcha-icefall-zh-baker
     tts_thread_num: 3
