@@ -114,39 +114,68 @@ class SherpaOnnxEventHandler(AsyncEventHandler):
             _LOGGER.debug(f"Received audio start event")
             audio_start = AudioStart.from_event(event)
             self.audio_recv_rate = audio_start.rate
+            self.audio_min_len = int(0.15 * self.audio_recv_rate) # 150ms
             self.stream = self.stt_model.create_stream()
             self.audio = b""
             return True
 
         elif AudioChunk.is_type(event.type):
             audio_chunk = AudioChunk.from_event(event)
-            _LOGGER.debug("Processing audio chunk...")
+
             chunk = self.audio_converter.convert(audio_chunk)
-            self.audio += chunk.audio
+            _LOGGER.debug("Processing audio chunk...")
+
+
+            if self.is_stt_online and self.cli_args.stt_use_online_processing:
+                audio_array = np.frombuffer(chunk.audio, dtype=np.int16).astype(np.float32) / 32768
+                self.stream.accept_waveform(self.audio_recv_rate, audio_array)
+                while self.stt_model.is_ready(self.stream):
+                    self.stt_model.decode_stream(self.stream)
+
+                if self.stt_model.is_endpoint(self.stream):
+                    _LOGGER.debug("Endpoint detected")
+                    await self.write_event(AudioStop().event())
+            else:
+                self.audio += chunk.audio
+
             return True
 
         elif AudioStop.is_type(event.type):
-            audio_stop = AudioStop.from_event(event)
-            _LOGGER.debug(f"Recevie audio stop:{audio_stop}")
-            result = None
-            if self.audio:
-                audio_array = (
-                    np.frombuffer(self.audio, dtype=np.int16).astype(np.float32) / 32768.0
-                )
-                self.stream.accept_waveform(self.audio_recv_rate, audio_array)
-                try:
+            try:
+                audio_stop = AudioStop.from_event(event)
+                _LOGGER.debug("Receive audio stop: %s", audio_stop)
+                result = None
+
+                if self.audio:
+                    audio_array = np.frombuffer(self.audio, dtype=np.int16).astype(np.float32) / 32768
+                    # pad last buffer with silence
+                    audio_array = np.pad(audio_array, (0, self.audio_min_len), 'constant')
+                    self.stream.accept_waveform(self.audio_recv_rate, audio_array)
+
+                if self.is_stt_online:
+                    # Inject some silence on online models
+                    tail_paddings = np.zeros(int(0.5 * self.audio_recv_rate), dtype=np.float32)
+                    self.stream.accept_waveform(self.audio_recv_rate, tail_paddings)
+                    self.stream.input_finished()
+
+                    while self.stt_model.is_ready(self.stream):
+                        self.stt_model.decode_stream(self.stream)
+
+                    result = self.stt_model.get_result(self.stream)
+                else:
                     self.stt_model.decode_stream(self.stream)
-                    result = self.stream.result
-                    _LOGGER.debug(f"{result}")
-                except Exception:
-                    _LOGGER.debug("Error during decoding stream, no valid text recognized")
-                    
-            if result and result.text:
-                await self.write_event(Transcript(text=result.text).event())
-                _LOGGER.debug(f"Final transcript on stop: {result.text}")
+                    result = getattr(self.stream.result, "text")
+
+                _LOGGER.debug(result)
+            except Exception as e:
+                _LOGGER.debug("Error during decoding stream, no valid text recognized: %s", e)
+
+            if result:
+                await self.write_event(Transcript(text=result).event())
+                _LOGGER.debug("Final transcript on stop: %s", result)
             else:
                 await self.write_event(Transcript(text='').event())
-                _LOGGER.debug(f"Empty transcript result event.")
+                _LOGGER.debug("Empty transcript result event.")
 
             return True
         return False
@@ -155,18 +184,22 @@ class SherpaOnnxEventHandler(AsyncEventHandler):
 
 async def main() -> None:
     """Main entry point."""
+    def bool_type(text):
+        return str(text).lower() in ['true','1', 'yes']
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--pipeline", default="default", help="Wyoming pipeline")
     parser.add_argument("--language", type=str, default=os.environ.get('LANGUAGE'), help="Language for TTS")
     parser.add_argument("--speed", type=float, default=float(os.environ.get('SPEED', 1.0)), help="Speech speed")
+    parser.add_argument("--stt_use_online_processing", type=bool_type, default=os.environ.get('STT_USE_ONLINE_PROCESSING', 'false'), help="Use online processing")
     parser.add_argument("--stt_model", type=str, default=os.environ.get('STT_MODEL'), help="STT model name")
-    parser.add_argument("--stt_use_int8_onnx_model", type=lambda x: (str(x).lower() in ['true','1', 'yes']), default=os.environ.get('STT_USE_INT8_ONNX_MODEL', 'false'), help="Use int8 STT model")
-    parser.add_argument("--stt_builtin_auto_convert_number", type=lambda x: (str(x).lower() in ['true','1', 'yes']), default=os.environ.get('STT_BUILTIN_AUTO_CONVERT_NUMBER', 'false'), help="Enable builtin STT number convert")
+    parser.add_argument("--stt_use_int8_onnx_model", type=bool_type, default=os.environ.get('STT_USE_INT8_ONNX_MODEL', 'false'), help="Use int8 STT model")
+    parser.add_argument("--stt_builtin_auto_convert_number", type=bool_type, default=os.environ.get('STT_BUILTIN_AUTO_CONVERT_NUMBER', 'false'), help="Enable builtin STT number convert")
     parser.add_argument("--stt_thread_num", type=int, default=int(os.environ.get('STT_THREAD_NUM', 2)), help="STT threads")
     parser.add_argument("--tts_model", type=str, default=os.environ.get('TTS_MODEL'), help="TTS model name")
     parser.add_argument("--tts_thread_num", type=int, default=int(os.environ.get('TTS_THREAD_NUM',2)), help="TTS threads")
     parser.add_argument("--tts_speaker_sid", type=int, default=int(os.environ.get('TTS_SPEAKER_SID', 0)), help="TTS speaker ID")
-    parser.add_argument("--debug", type=lambda x: (str(x).lower() in ['true','1', 'yes']), default=os.environ.get('DEBUG', 'false'), help="Enable debug logging")
+    parser.add_argument("--debug", type=bool_type, default=os.environ.get('DEBUG', 'false'), help="Enable debug logging")
     parser.add_argument("--custom_stt_model", type=str, default=os.environ.get('CUSTOM_STT_MODEL', 'null'), help="Custom STT model")
     parser.add_argument("--custom_stt_model_eval", type=str, default=os.environ.get('CUSTOM_STT_MODEL_EVAL', 'null'), help="Custom STT model eval")
     parser.add_argument("--custom_tts_model", type=str, default=os.environ.get('CUSTOM_TTS_MODEL', 'null'), help="Custom TTS model")
@@ -261,7 +294,7 @@ async def main() -> None:
                 stt_model,
             )
         )
-        
+
     )
 
     # Run FastAPI server using uvicorn
