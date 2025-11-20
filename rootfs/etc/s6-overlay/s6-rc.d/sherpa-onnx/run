@@ -9,6 +9,7 @@ STT_MODEL=$(echo `bashio::config 'stt_model'`|sed "s/null/$STT_MODEL/g")
 STT_USE_INT8_ONNX_MODEL=$(echo `bashio::config 'stt_use_int8_onnx_model'`|sed "s/null/$STT_USE_INT8_ONNX_MODEL/g")
 STT_BUILTIN_AUTO_CONVERT_NUMBER=$(echo `bashio::config 'stt_builtin_auto_convert_number'`|sed "s/null/$STT_BUILTIN_AUTO_CONVERT_NUMBER/g")
 STT_THREAD_NUM=$(echo `bashio::config 'stt_thread_num'`|sed "s/null/$STT_THREAD_NUM/g")
+STT_USE_ONLINE_PROCESSING=$(echo `bashio::config 'stt_use_online_processing'`|sed "s/null/$STT_USE_ONLINE_PROCESSING/g")
 TTS_MODEL=$(echo `bashio::config 'tts_model'`|sed "s/null/$TTS_MODEL/g")
 TTS_THREAD_NUM=$(echo `bashio::config 'tts_thread_num'`|sed "s/null/$TTS_THREAD_NUM/g")
 TTS_SPEAKER_SID=$(echo `bashio::config 'tts_speaker_sid'`|sed "s/null/$TTS_SPEAKER_SID/g")
@@ -38,6 +39,7 @@ exec python3 /app/run.py \
     --stt_use_int8_onnx_model "$STT_USE_INT8_ONNX_MODEL" \
     --stt_builtin_auto_convert_number "$STT_BUILTIN_AUTO_CONVERT_NUMBER" \
     --stt_thread_num "$STT_THREAD_NUM" \
+    --stt_use_online_processing "$STT_USE_ONLINE_PROCESSING" \
     --tts_model "$TTS_MODEL" \
     --tts_thread_num "$TTS_THREAD_NUM" \
     --tts_speaker_sid "$TTS_SPEAKER_SID" \

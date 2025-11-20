@@ -70,6 +70,12 @@ Enable STT auto convert Chinese numbers(eg. 一二三) to Arabic numerals (eg. 1
 DOCKER ENV STT_THREAD_NUM
 
 Number of Threads for TTS. default: 3
+
+### Option: `stt_use_online_processing`
+
+DOCKER ENV STT_USE_ONLINE_PROCESSING
+
+Enable online/streaming STT processing for lower latency. default: False
     
 ### Option: `tts_model`
 
