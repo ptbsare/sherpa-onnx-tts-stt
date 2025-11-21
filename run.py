@@ -42,11 +42,16 @@ class SherpaOnnxEventHandler(AsyncEventHandler):
         self.tts_model = tts_model
         self.stt_model = stt_model
         self.audio_converter = AudioChunkConverter(rate=16000, width=2, channels=1)
+
+        self.is_stt_online = hasattr(self.stt_model, 'is_ready')
         self.audio = b""
+        self.audio_min_len = 1024
+        if self.cli_args.stt_use_online_processing and self.is_stt_online:
+            _LOGGER.debug("Using online processing")
 
     async def handle_event(self, event: Event) -> bool:
         """Handles a single event."""
-        _LOGGER.debug(f"Received event: {event}")
+        _LOGGER.debug("Received event: %s", event)
         if Describe.is_type(event.type):
             await self.write_event(self.wyoming_info_.event())
             return True
