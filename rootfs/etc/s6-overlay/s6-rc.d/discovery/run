@@ -5,10 +5,10 @@
 # ==============================================================================
 declare config
 
-# Wait for whisper.cpp to become available
+# Wait for sherpa-onnx to become available
 bash -c \
     "until
-        echo '{ \"type\": \"describe\" }' 
+        echo '{ \"type\": \"describe\" }'
             > /dev/tcp/localhost/10400; do sleep 0.5;
     done" > /dev/null 2>&1 || true;
 
