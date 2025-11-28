@@ -118,4 +118,8 @@ def initialize_models(cli_args):
         _LOGGER.critical("Failed to initialize custom TTS model: %s", e)
         raise
 
+    if not (tts_model or stt_model):
+        _LOGGER.critical("No models loaded")
+        raise Exception("No models loaded")
+
     return stt_model, tts_model

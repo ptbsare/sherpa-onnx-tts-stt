@@ -13,11 +13,7 @@ def load(cli_args):
         paraformer=os.path.join(
             stt_model_dir,
             stt_model,
-            (
-                "model.int8.onnx"
-                if cli_args.stt_use_int8_onnx_model == True
-                else "model.onnx"
-            ),
+            ("model.int8.onnx" if cli_args.stt_use_int8_onnx_model else "model.onnx"),
         ),
         tokens=os.path.join(stt_model_dir, stt_model, "tokens.txt"),
         decoding_method="greedy_search",
