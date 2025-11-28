@@ -8,6 +8,7 @@ def load(cli_args):
     tts_model_dir = os.environ.get("TTS_MODEL_DIR", "/tts-models")
 
     model_utils.fetch_tts_model(tts_model_dir, tts_model)
+    model_utils.fetch_vocoder_model(tts_model_dir, 'hifigan_v2.onnx')
 
     return sherpa_onnx.OfflineTts(
         sherpa_onnx.OfflineTtsConfig(

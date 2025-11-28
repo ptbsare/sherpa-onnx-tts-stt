@@ -39,7 +39,7 @@ def _download_model(model_url, model_dir, model):
             os.remove(os.path.join(model_dir, model, f"{model}.tar.gz"))  # Clean up
             _LOGGER.info(f"Download and extract Done. Cleaned up.")
         except subprocess.CalledProcessError as e:
-            _LOGGER.error(f"Error downloading or extracting  model: {e}")
+            _LOGGER.error(f"Error downloading or extracting model: {e}")
             raise  #  Re-raise to stop add-on startup on failure
     else:
         _LOGGER.info(f"{model} model already exists.")
@@ -56,6 +56,30 @@ def fetch_tts_model(tts_model_dir, model):
     tts_model_url = f"https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/{model}.tar.bz2"
     _download_model(tts_model_url, tts_model_dir, model)
 
+def fetch_vocoder_model(model_dir, model):
+    # --- Vocoder Model ---
+    model_url = f"https://github.com/k2-fsa/sherpa-onnx/releases/download/vocoder-models/{model}"
+    if not os.path.exists(os.path.join(model_dir, model)):
+        _LOGGER.info("Downloading model: %s", model_url)
+        os.makedirs(model_dir, exist_ok=True)
+
+        # Use curl (or wget) for download and extraction (more robust than Python libraries for large files)
+        try:
+            subprocess.check_call(
+                [
+                    "curl",
+                    "-L",
+                    model_url,
+                    "-o",
+                    os.path.join(model_dir, model),
+                ]
+            )
+            _LOGGER.info("Downloaded model: %s", model_url)
+        except subprocess.CalledProcessError as e:
+            _LOGGER.error("Error downloading model: %s", e)
+            raise  #  Re-raise to stop add-on startup on failure
+    else:
+        _LOGGER.info("%s model already exists.", model)
 
 def load_module(file):
     spec = importlib.util.spec_from_file_location("model", file)
