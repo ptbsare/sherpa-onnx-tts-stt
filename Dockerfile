@@ -1,18 +1,19 @@
+
+ARG BUILD_FROM=python:3.11.9-slim-bullseye
+FROM $BUILD_FROM
+
 ARG BUILD_TYPE=cpu
 ARG CPU_PLATFORM=python:3.11.9-slim-bullseye
 ARG GPU_PLATFORM=nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
 
-# Set TARGET_PLATFORM based on BUILD_TYPE
-#ARG TARGET_PLATFORM
-#RUN if [ "$BUILD_TYPE" = "cuda" ]; then
-#    export TARGET_PLATFORM=$GPU_PLATFORM;
-#else
-#    export TARGET_PLATFORM=$CPU_PLATFORM;
-#fi
-
-#FROM --platform=$TARGET_PLATFORM ${TARGET_PLATFORM}
-ARG BUILD_FROM=python:3.11.9-slim-bullseye
-FROM $BUILD_FROM
+# Prefetch the model in image
+ARG PREFETCH=0
+# Default language for base-image
+ARG LANGUAGE=zh-CN
+# Default model for base-image
+ARG TTS_MODEL
+# Default model for base-image
+ARG STT_MODEL
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -63,11 +64,6 @@ RUN if [ "$BUILD_TYPE" = "cuda" ]; then \
     apt-get clean && \
     rm -fr /tmp/* /var/{cache,log}/* /var/lib/apt/lists/*; \
 fi
-
-# Common environment variables - Defined once
-ENV LANGUAGE='zh-CN'
-ENV SPEED='1.0'
-ENV DEBUG='False'
 
 # Install common packages - Defined once
 RUN apt-get update \
@@ -129,6 +125,25 @@ RUN pip install --break-system-packages --no-cache-dir uvicorn fastapi pydantic 
 # Copy the add-on code.  Crucially *before* requirements.txt, so Docker layer caching works!
 COPY . /app
 WORKDIR /app
+
+# Common environment variables - Defined once
+ENV LANGUAGE=${LANGUAGE}
+ENV SPEED='1.0'
+ENV DEBUG='False'
+ENV STT_MODEL=${STT_MODEL}
+ENV STT_USE_INT8_ONNX_MODEL='False'
+ENV STT_BUILTIN_AUTO_CONVERT_NUMBER='False'
+ENV STT_THREAD_NUM='2'
+ENV TTS_MODEL=${TTS_MODEL}
+ENV TTS_THREAD_NUM='2'
+ENV TTS_SPEAKER_SID='0'
+ENV DEBUG='False'
+ENV CUSTOM_STT_MODEL='null'
+ENV CUSTOM_STT_MODEL_EVAL='null'
+ENV CUSTOM_TTS_MODEL='null'
+ENV CUSTOM_TTS_MODEL_EVAL='null'
+
+RUN [ "$PREFETCH" = "0" ] || python ./run.py --run=False
 
 #EXPOSE PORTS
 EXPOSE 10400 10500
