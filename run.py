@@ -205,10 +205,9 @@ async def main() -> None:
     parser.add_argument("--tts_thread_num", type=int, default=int(os.environ.get('TTS_THREAD_NUM') or 2), help="TTS threads")
     parser.add_argument("--tts_speaker_sid", type=int, default=int(os.environ.get('TTS_SPEAKER_SID') or 0), help="TTS speaker ID")
     parser.add_argument("--debug", type=bool_type, default=os.environ.get('DEBUG', 'false'), help="Enable debug logging")
-    parser.add_argument("--custom_stt_model", type=str, default=os.environ.get('CUSTOM_STT_MODEL', 'null'), help="Custom STT model")
     parser.add_argument("--custom_stt_model_eval", type=str, default=os.environ.get('CUSTOM_STT_MODEL_EVAL', 'null'), help="Custom STT model eval")
-    parser.add_argument("--custom_tts_model", type=str, default=os.environ.get('CUSTOM_TTS_MODEL', 'null'), help="Custom TTS model")
     parser.add_argument("--custom_tts_model_eval", type=str, default=os.environ.get('CUSTOM_TTS_MODEL_EVAL', 'null'), help="Custom TTS model eval")
+    parser.add_argument("--run", type=bool_type, default=True, help="Run the main thread")
     parser.add_argument("--host", default="0.0.0.0", help="Host for Wyoming and API")
     parser.add_argument("--port", type=int, default=10400, help="Port for Wyoming")
     parser.add_argument("--api_port", type=int, default=10500, help="Port for FastAPI")
@@ -287,37 +286,38 @@ async def main() -> None:
     )
     stt_model, tts_model = initialize_models(cli_args)
 
-    # Run Wyoming server in a separate task
-    wyoming_server = AsyncTcpServer(cli_args.host, cli_args.port)
-    wyoming_task = asyncio.create_task(
-        wyoming_server.run(
-            partial(
-                SherpaOnnxEventHandler,
-                wyoming_info,
-                cli_args,
-                tts_model,
-                stt_model,
+    if cli_args.run:
+        # Run Wyoming server in a separate task
+        wyoming_server = AsyncTcpServer(cli_args.host, cli_args.port)
+        wyoming_task = asyncio.create_task(
+            wyoming_server.run(
+                partial(
+                    SherpaOnnxEventHandler,
+                    wyoming_info,
+                    cli_args,
+                    tts_model,
+                    stt_model,
+                )
             )
+
         )
 
-    )
+        # Run FastAPI server using uvicorn
+        _LOGGER.info(f"Starting Wyoming server at {cli_args.host}:{cli_args.port}")
+        _LOGGER.info(f"Starting FastAPI server at 0.0.0.0:{cli_args.api_port}")
 
-    # Run FastAPI server using uvicorn
-    _LOGGER.info(f"Starting Wyoming server at {cli_args.host}:{cli_args.port}")
-    _LOGGER.info(f"Starting FastAPI server at 0.0.0.0:{cli_args.api_port}")
+        api._model_container = ModelContainer(stt_model=stt_model, tts_model=tts_model)
 
-    api._model_container = ModelContainer(stt_model=stt_model, tts_model=tts_model)
+        config = uvicorn.Config(
+            "api:app",
+            host="0.0.0.0",
+            port=cli_args.api_port,
+            log_level="debug" if cli_args.debug else "info",
+        )
+        server = uvicorn.Server(config)
 
-    config = uvicorn.Config(
-        "api:app",
-        host="0.0.0.0",
-        port=cli_args.api_port,
-        log_level="debug" if cli_args.debug else "info",
-    )
-    server = uvicorn.Server(config)
-
-    await asyncio.gather(wyoming_task, server.serve())
-    _LOGGER.info("Stopped")
+        await asyncio.gather(wyoming_task, server.serve())
+        _LOGGER.info("Stopped")
 
 if __name__ == "__main__":
     asyncio.run(main())

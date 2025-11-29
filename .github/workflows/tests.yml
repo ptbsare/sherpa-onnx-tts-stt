@@ -1,0 +1,28 @@
+name: Tests
+
+on: [ push, workflow_dispatch ]
+
+jobs:
+  test-models:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build docker image
+        run: docker build -t local -f Dockerfile .
+      - name: Test preconfigured languages
+        run: |
+          find models -path '*/lang/*' -printf '%f\n'|\
+            sort|uniq|xargs -i \
+            bash -c 'echo "Testing {}"; docker run -i -e LANGUAGE={} local --run=false || exit 255'
+      - name: Test preconfigured TTS models
+        run: |
+          find models/tts -maxdepth 1 -type f -printf '%f\n'|sed 's/.py//'|\
+            sort|uniq|xargs -i \
+            bash -c 'echo "Testing {}"; docker run -i -e LANGUAGE= -e TTS_MODEL={} local --run=false || exit 255'
+      - name: Test preconfigured STT models
+        run: |
+          find models/stt -maxdepth 1 -type f -printf '%f\n'|sed 's/.py//'|\
+            sort|uniq|xargs -i \
+            bash -c 'echo "Testing {}"; docker run -i -e LANGUAGE= -e STT_MODEL={} local --run=false || exit 255'
